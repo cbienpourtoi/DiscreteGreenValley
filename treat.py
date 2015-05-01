@@ -27,8 +27,12 @@ from astropy.io import ascii
 galexfile = "galex/MAST_2015-04-29T2046/GALEX/6371021344036880384/AIS_3_sg33-nd-int.fits"
 sdssfile = "sdss/frame-r-004682-4-0092.fits"
 
-sdss_lowres_file = 'tmp/sdss_lowres.fits'
+# Temporary files directory
+tmp = "tmp/"
+os.mkdir(tmp)
 
+# Name for the llow resolution sdss file
+sdss_lowres_file = tmp+'sdss_lowres.fits'
 
 
 ###################################################
@@ -43,7 +47,7 @@ sdss_lowres_file = 'tmp/sdss_lowres.fits'
 RA = 183.3417
 Dec = 28.5103
 
-sdss_table_file = "tmp/sdsstable.csv"
+sdss_table_file = tmp+"sdsstable.csv"
 urllib.urlretrieve("http://skyserver.sdss.org/dr10/en/tools/search/x_radial.aspx?ra="+str(RA)+"&dec="+str(Dec)+"&radius=0.2&format=csv&limit=20", sdss_table_file)
 urllib.urlcleanup()
 sdss_data = ascii.read(sdss_table_file, format='csv', header_start=1)
@@ -57,7 +61,7 @@ run2 = ("%6i" % int(run)).replace(' ', '0')
 field2 = ("%4i" % int(field)).replace(' ', '0')
 
 #urllib.urlretrieve("http://dr10.sdss3.org/sas/dr10/boss/photoObj/frames/"+rerun+"/"+run+"/"+camcol+"/frame-r-"+004682+"-"+camcol+"-"+0092+".fits.bz2", "test.fits.bz2")
-urllib.urlretrieve("http://dr10.sdss3.org/sas/dr10/boss/photoObj/frames/"+rerun+"/"+run+"/"+camcol+"/frame-r-"+run2+"-"+camcol+"-"+field2+".fits.bz2", "test2.fits.bz2")
+urllib.urlretrieve("http://dr10.sdss3.org/sas/dr10/boss/photoObj/frames/"+rerun+"/"+run+"/"+camcol+"/frame-r-"+run2+"-"+camcol+"-"+field2+".fits.bz2", tmp+"sdssR.fits.bz2")
 urllib.urlcleanup()
 
 
@@ -110,10 +114,10 @@ hdulist_sdss_lowres.close()
 
 # File in which we will create the header template requested by Montage 
 #(http://montage.ipac.caltech.edu/docs/mProject.html)
-sdssheader_tmp = "tmp/sdsstmp.hdr"
+sdssheader_tmp = tmp+"sdsstmp.hdr"
 
 # Projected Galex image on the header system of the sdss image
-galex_projected = "tmp/galex_projected.fits"
+galex_projected = tmp+"galex_projected.fits"
 
 # Creates the header template
 os.system("mGetHdr "+sdssfile+" "+ sdssheader_tmp)
