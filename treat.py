@@ -1,16 +1,28 @@
 #! /usr/local/bin python
 # -*- coding: iso-8859-1 -*-
 
+""" 
+- Gets R images from sdss 
+- Imports the image you chose from Galex 
+(branch for galex auto-import currently abandonned)
+- Convolves sdss images to Galex images
+- Projects/Register sdss on Galex field
+- and then plays with the data obtained"""
+
+
 # This code requires Montage installed on your system:
 # http://montage.ipac.caltech.edu
 
-# It requires also casjobs: 
+# Only if trying to get data from Galex 
+# (does not work yet, and maybe never will)
+# it requires casjobs: 
 # install it from http://galex.stsci.edu/casjobs/casjobscl.aspx
 casjobs = "java -jar ~/sandbox/CasJobsCL/casjobs.jar" 
 
 
-
-# Importing packages
+#################
+### Packages ####
+#################
 #import matplotlib
 #matplotlib.use('Agg')
 import numpy as np
@@ -24,14 +36,15 @@ import sys
 import os
 from astropy.convolution import Gaussian2DKernel, convolve_fft
 #import aplpy
-from PIL import Image
+from PIL import Image #If you want to make RGB image
 import urllib
 from astropy.table import Table
 from astropy.io import ascii
 
-# Initial files (sdss for R-band, galex for NUV band)
-galexfile = "galex/MAST_2015-04-29T2046/GALEX/6371021344036880384/AIS_3_sg33-nd-int.fits"
-sdssfile = "sdss/frame-r-004682-4-0092.fits"
+
+############
+### Init ###
+############
 
 # Temporary files directory
 tmp = "tmp/"
@@ -40,6 +53,13 @@ if not os.path.exists(tmp):
 
 # Name for the llow resolution sdss file
 sdss_lowres_file = tmp+'sdss_lowres.fits'
+
+
+# Initial files (sdss for R-band, galex for NUV band)
+galexfile = "galex/MAST_2015-04-29T2046/GALEX/6371021344036880384/AIS_3_sg33-nd-int.fits"
+sdssfile = "sdss/frame-r-004682-4-0092.fits"
+
+
 
 
 ######################
