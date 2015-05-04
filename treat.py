@@ -17,7 +17,7 @@
 # (does not work yet, and maybe never will)
 # it requires casjobs: 
 # install it from http://galex.stsci.edu/casjobs/casjobscl.aspx
-casjobs = "java -jar ~/sandbox/CasJobsCL/casjobs.jar" 
+# casjobs = "java -jar ~/sandbox/CasJobsCL/casjobs.jar" 
 
 
 #################
@@ -29,10 +29,7 @@ import numpy as np
 from astropy.io import fits
 import pyfits
 import sys
-#import alipy
 #import glob
-#import cutout
-#cutout = reload(cutout)
 import os
 from astropy.convolution import Gaussian2DKernel, convolve_fft
 #import aplpy
@@ -40,7 +37,7 @@ from PIL import Image #If you want to make RGB image
 import urllib
 from astropy.table import Table
 from astropy.io import ascii
-
+import bz2
 
 ############
 ### Init ###
@@ -56,185 +53,177 @@ sdss_lowres_file = tmp+'sdss_lowres.fits'
 
 
 # Initial files (sdss for R-band, galex for NUV band)
-galexfile = "galex/MAST_2015-04-29T2046/GALEX/6371021344036880384/AIS_3_sg33-nd-int.fits"
-sdssfile = "sdss/frame-r-004682-4-0092.fits"
+#GalexFile = "galex/MAST_2015-04-29T2046/GALEX/6371021344036880384/AIS_3_sg33-nd-int.fits"
+#SDSSFile = "sdss/frame-r-004682-4-0092.fits"
 
 
 
 
 ######################
-# target coordinates #
+# Galaxy coordinates #
 ######################
+# galex data from:
+# http://galex.stsci.edu/GR6/?page=mastform
 
-# NGC6125 E
-RA = 244.7958
-Dec = 57.9842
+galaxies = Table.read("galaxy_list.txt", format="ascii")
 
-# NGC4185 S
-#RA = 183.3417
-#Dec = 28.5103
+for galaxy in galaxies:
 
+	name = galaxy["Name"]
+	RA = galaxy["RA"]
+	Dec = galaxy["Dec"]
+	GalexFile = galaxy["GalexFilePath"] 
+	
+	"""
+	# NGC6125 E
+	RA = 244.7958
+	Dec = 57.9842
 
-
-###################################################
-# Downloads directly from GALEX using coordinates:#
-###################################################
-
-galex_table_file = tmp+"galextable.csv"
-
-casjobs_cmd = casjobs+" execute "
-casjobs_cmd = casjobs_cmd + "\"SELECT TOP 100 p.objid, dbo.fHasSpectrum(p.objid) as specObjID, n.distance as distance_arcmin, dbo.fIAUFromEq(p.ra,p.dec) as IAUName,p.ra,p.dec,p.fuv_mag, p.nuv_mag,p.fuv_flux, p.nuv_flux,p.e_bv,p.isThereSpectrum,p.fuv_fwhm_world,p.nuv_fwhm_world,p.vsn,p.prod,p.tilenum,p.try,p.img,p.band,p.id,p.subvisit,p.leg,p.ow,p.type,p.htmID FROM PhotoObjAll as p LEFT OUTER JOIN SpecObjAll as s on p.objid = s.objid, dbo.fGetNearbyObjEq("
-casjobs_cmd = casjobs_cmd + str(RA)+" , "+str(Dec)
-casjobs_cmd = casjobs_cmd +" , 0.5) as n WHERE p.band=1 AND p.objID = n.objID ORDER BY n.distance ASC,p.nuv_flux ASC ,p.band ASC ,p.e_bv ASC\""
-casjobs_cmd = casjobs_cmd + ">"+galex_table_file
-os.system(casjobs_cmd)
-
-galex_data = ascii.read(galex_table_file, format='csv', header_start=1)
-
-survey = "AIS"
-galex_filter = "nd" # nd for NUV, fd for FUV
-vsn = galex_data["[vsn]:Integer"][0]
-vsn2 = ("%2i" % int(vsn)).replace(' ','0') + "-vsn"
-tile = str(galex_data["[tilenum]:Integer"][0])
-tile2 = tile +"-"+survey+"_"+tile[-3:]
-tryy = galex_data["[try]:Integer"][0]
-tryy2 = ("%2i" % int(tryy)).replace(' ','0') + "-try"
-subvisit = str(galex_data["[subvisit]:Integer"][0])
-
-imagename = survey+"_"+tile[-3:]+"_0001_sg"+subvisit+"-"+galex_filter+"-int.fits.gz"
-
-galeximageurl = "http://galex.stsci.edu/data/GR6/pipe/"+vsn2+"/"+tile2+"/d/00-visits/0001-img/"+tryy2+"/"+imagename
-
-urllib.urlretrieve(galeximageurl, tmp+"GalexNUV.fits.gz")
-urllib.urlcleanup()
-
-#urllib.urlretrieve("http://galex.stsci.edu/data/GR6/pipe/02-vsn/50112-AIS_112/d/00-visits/0001-img/07-try/AIS_112_0001_sg68-nd-int.fits.gz", tmp+"GalexNUV.fits.gz")
+	# NGC4185 S
+	#RA = 183.3417
+	#Dec = 28.5103
+	"""
 
 
-sys.exit()
+	###################################################
+	# Downloads directly from GALEX using coordinates:#
+	###################################################
+	""" Does not work (yet?). Instead, just download the image yourself.
+
+	casjobs = "java -jar ~/sandbox/CasJobsCL/casjobs.jar" 
+
+	galex_table_file = tmp+"galextable.csv"
+
+	casjobs_cmd = casjobs+" execute "
+	casjobs_cmd = casjobs_cmd + "\"SELECT TOP 100 p.objid, dbo.fHasSpectrum(p.objid) as specObjID, n.distance as distance_arcmin, dbo.fIAUFromEq(p.ra,p.dec) as IAUName,p.ra,p.dec,p.fuv_mag, p.nuv_mag,p.fuv_flux, p.nuv_flux,p.e_bv,p.isThereSpectrum,p.fuv_fwhm_world,p.nuv_fwhm_world,p.vsn,p.prod,p.tilenum,p.try,p.img,p.band,p.id,p.subvisit,p.leg,p.ow,p.type,p.htmID FROM PhotoObjAll as p LEFT OUTER JOIN SpecObjAll as s on p.objid = s.objid, dbo.fGetNearbyObjEq("
+	casjobs_cmd = casjobs_cmd + str(RA)+" , "+str(Dec)
+	casjobs_cmd = casjobs_cmd +" , 0.5) as n WHERE p.band=1 AND p.objID = n.objID ORDER BY n.distance ASC,p.nuv_flux ASC ,p.band ASC ,p.e_bv ASC\""
+	casjobs_cmd = casjobs_cmd + ">"+galex_table_file
+	os.system(casjobs_cmd)
+
+	galex_data = ascii.read(galex_table_file, format='csv', header_start=1)
+
+	survey = "AIS"
+	galex_filter = "nd" # nd for NUV, fd for FUV
+	vsn = galex_data["[vsn]:Integer"][0]
+	vsn2 = ("%2i" % int(vsn)).replace(' ','0') + "-vsn"
+	tile = str(galex_data["[tilenum]:Integer"][0])
+	tile2 = tile +"-"+survey+"_"+tile[-3:]
+	tryy = galex_data["[try]:Integer"][0]
+	tryy2 = ("%2i" % int(tryy)).replace(' ','0') + "-try"
+	subvisit = str(galex_data["[subvisit]:Integer"][0])
+
+	imagename = survey+"_"+tile[-3:]+"_0001_sg"+subvisit+"-"+galex_filter+"-int.fits.gz"
+
+	galeximageurl = "http://galex.stsci.edu/data/GR6/pipe/"+vsn2+"/"+tile2+"/d/00-visits/0001-img/"+tryy2+"/"+imagename
+
+	urllib.urlretrieve(galeximageurl, tmp+"GalexNUV.fits.gz")
+	urllib.urlcleanup()
+
+	#urllib.urlretrieve("http://galex.stsci.edu/data/GR6/pipe/02-vsn/50112-AIS_112/d/00-visits/0001-img/07-try/AIS_112_0001_sg68-nd-int.fits.gz", tmp+"GalexNUV.fits.gz")
 
 
-"""
-<ROOT>/<proc ver>/<tile>/<obs mode>/<product>/<image>/<try>/. 
-
-Path: <root>/01-vsn/10330-AISCHV2_381_40554/d/00-visits/0002-img/03-try/
-
-http://galex.stsci.edu/data/GR6/pipe/02-vsn/50112-AIS_112/d/00-visits/0001-img/07-try/AIS_112_0001_sg68-nd-int.fits.gz 
-
-Filename: AISCHV2_381_40554_0002_sv12-xd-mcat.fits
-
-"""
-"""
-tile = 50112
-vsn = 02
-Tile Name: AIS_112 
-visit = 1
-NUV = nd
-GR ?
-"""
-
-###################################################
-# Downloads directly from SDSS using coordinates: #
-###################################################
-
-sdss_table_file = tmp+"sdsstable.csv"
-urllib.urlretrieve("http://skyserver.sdss.org/dr10/en/tools/search/x_radial.aspx?ra="+str(RA)+"&dec="+str(Dec)+"&radius=0.2&format=csv&limit=20", sdss_table_file)
-urllib.urlcleanup()
-sdss_data = ascii.read(sdss_table_file, format='csv', header_start=1)
-
-run = sdss_data['run'][0] #4862
-rerun = sdss_data['rerun'][0] #301
-camcol = sdss_data['camcol'][0] #4
-field = sdss_data['field'][0] #92
-
-run2 = ("%6i" % int(run)).replace(' ', '0')
-field2 = ("%4i" % int(field)).replace(' ', '0')
-
-#urllib.urlretrieve("http://dr10.sdss3.org/sas/dr10/boss/photoObj/frames/"+rerun+"/"+run+"/"+camcol+"/frame-r-"+004682+"-"+camcol+"-"+0092+".fits.bz2", "test.fits.bz2")
-urllib.urlretrieve("http://dr10.sdss3.org/sas/dr10/boss/photoObj/frames/"+rerun+"/"+run+"/"+camcol+"/frame-r-"+run2+"-"+camcol+"-"+field2+".fits.bz2", tmp+"sdssR.fits.bz2")
-urllib.urlcleanup()
-
-
-################################
-###### Convolution part ########
-################################
-
-
-# PSF to convolve SDSS to Galex resolution
-galex_psf_arcsec = 5. #arcsec FWHM
-galex_psf_deg = galex_psf_arcsec / 360.
-
-# Infos from Galex file
-galex_hdulist = fits.open(galexfile)
-galex_cdelt1 = galex_hdulist[0].header["CDELT1"]
-galex_cdelt2 = galex_hdulist[0].header["CDELT2"]
-galex_hdulist.close()
-
-# Sanity check
-if np.abs(galex_cdelt1) != np.abs(galex_cdelt2):
-	print "CDELT 1 and 2 in galex are different. That could mess the psf (or not, but I stop anyway)"
 	sys.exit()
-
-# Create psf
-psf = Gaussian2DKernel(stddev=galex_psf_deg/np.abs(galex_cdelt1)/2.355)
-
-
-# Opens SDSS and convolves it to psf
-sdss_hdulist = fits.open(sdssfile)
-sdss_lowres = convolve_fft(sdss_hdulist[0].data, psf)
-
-# Saves the low resolution sdss
-hdu = fits.PrimaryHDU(sdss_lowres, header = sdss_hdulist[0].header)
-hdulist_sdss_lowres = fits.HDUList([hdu])
-hdulist_sdss_lowres.writeto(sdss_lowres_file, clobber=True)
-sdss_hdulist.close()
-hdulist_sdss_lowres.close()
-
-
-################################
-###### Projection part  ########
-################################
-
-# File in which we will create the header template requested by Montage 
-#(http://montage.ipac.caltech.edu/docs/mProject.html)
-sdssheader_tmp = tmp+"sdsstmp.hdr"
-
-# Projected Galex image on the header system of the sdss image
-galex_projected = tmp+"galex_projected.fits"
-
-# Creates the header template
-os.system("mGetHdr "+sdssfile+" "+ sdssheader_tmp)
-
-# Does the projection
-os.system("mProject "+galexfile+" "+ galex_projected+" "+sdssheader_tmp)
+	"""
 
 
 
+	###################################################
+	# Downloads directly from SDSS using coordinates: #
+	###################################################
 
-################################
-######    RGB Image     ########
-################################
+	sdss_table_file = tmp+"sdsstable.csv"
+	urllib.urlretrieve("http://skyserver.sdss.org/dr10/en/tools/search/x_radial.aspx?ra="+str(RA)+"&dec="+str(Dec)+"&radius=0.2&format=csv&limit=20", sdss_table_file)
+	urllib.urlcleanup()
+	sdss_data = ascii.read(sdss_table_file, format='csv', header_start=1)
 
-sdss_lr_image = (fits.open(sdss_lowres_file))[0].data
-galex_proj_image = (fits.open(galex_projected))[0].data
-last_color = sdss_lr_image * 0.
+	run = sdss_data['run'][0] #4862
+	rerun = sdss_data['rerun'][0] #301
+	camcol = sdss_data['camcol'][0] #4
+	field = sdss_data['field'][0] #92
 
-sdss_lr_image = sdss_lr_image / np.nansum(sdss_lr_image)
-galex_proj_image = galex_proj_image / np.nansum(galex_proj_image)
-
-rgbArray = np.zeros((sdss_lr_image.shape[0],sdss_lr_image.shape[1],3), 'uint8')
-rgbArray[..., 0] = sdss_lr_image * 25
-rgbArray[..., 1] = galex_proj_image * 250
-rgbArray[..., 2] = last_color
-
-img = Image.fromarray(rgbArray)
-
-img.save('myimg.jpeg')
-
-
+	run2 = ("%6i" % int(run)).replace(' ', '0')
+	field2 = ("%4i" % int(field)).replace(' ', '0')
+	
+	SDSSFile = tmp+"sdssR.fits.bz2"
+	urllib.urlretrieve("http://dr10.sdss3.org/sas/dr10/boss/photoObj/frames/"+rerun+"/"+run+"/"+camcol+"/frame-r-"+run2+"-"+camcol+"-"+field2+".fits.bz2", SDSSFile)
+	urllib.urlcleanup()
 
 
 
+	################################
+	###### Convolution part ########
+	################################
+
+	# PSF to convolve SDSS to Galex resolution
+	galex_psf_arcsec = 5. #arcsec FWHM
+	galex_psf_deg = galex_psf_arcsec / 360.
+
+	# Infos from Galex file
+	galex_hdulist = fits.open(GalexFile)
+	galex_cdelt1 = galex_hdulist[0].header["CDELT1"]
+	galex_cdelt2 = galex_hdulist[0].header["CDELT2"]
+	galex_hdulist.close()
+
+	# Sanity check
+	if np.abs(galex_cdelt1) != np.abs(galex_cdelt2):
+		print "CDELT 1 and 2 in galex are different. That could mess the psf (or not, but I stop anyway)"
+		sys.exit()
+
+	# Create psf
+	psf = Gaussian2DKernel(stddev=galex_psf_deg/np.abs(galex_cdelt1)/2.355)
+
+
+	# Opens SDSS and convolves it to psf
+	sdss_hdulist = fits.open(bz2.BZ2File(SDSSFile))
+	sdss_lowres = convolve_fft(sdss_hdulist[0].data, psf)
+
+	# Saves the low resolution sdss
+	hdu = fits.PrimaryHDU(sdss_lowres, header = sdss_hdulist[0].header)
+	hdulist_sdss_lowres = fits.HDUList([hdu])
+	hdulist_sdss_lowres.writeto(sdss_lowres_file, clobber=True)
+	sdss_hdulist.close()
+	hdulist_sdss_lowres.close()
+
+
+	################################
+	###### Projection part  ########
+	################################
+
+	# File in which we will create the header template requested by Montage 
+	#(http://montage.ipac.caltech.edu/docs/mProject.html)
+	sdssheader_tmp = tmp+"sdsstmp.hdr"
+
+	# Projected Galex image on the header system of the sdss image
+	galex_projected = tmp+"galex_projected.fits"
+
+	# Creates the header template
+	os.system("mGetHdr "+SDSSFile+" "+ sdssheader_tmp)
+
+	# Does the projection
+	os.system("mProject "+GalexFile+" "+ galex_projected+" "+sdssheader_tmp)
+
+
+
+	################################
+	######    RGB Image     ########
+	################################
+
+	sdss_lr_image = (fits.open(sdss_lowres_file))[0].data
+	galex_proj_image = (fits.open(galex_projected))[0].data
+	last_color = sdss_lr_image * 0.
+
+	sdss_lr_image = sdss_lr_image / np.nansum(sdss_lr_image)
+	galex_proj_image = galex_proj_image / np.nansum(galex_proj_image)
+
+	rgbArray = np.zeros((sdss_lr_image.shape[0],sdss_lr_image.shape[1],3), 'uint8')
+	rgbArray[..., 0] = sdss_lr_image * 25
+	rgbArray[..., 1] = galex_proj_image * 250
+	rgbArray[..., 2] = last_color
+
+	img = Image.fromarray(rgbArray)
+
+	img.save('myimg.jpeg')
 
 
 
@@ -243,6 +232,13 @@ img.save('myimg.jpeg')
 
 
 
+
+
+
+
+################
+#### Drafts ####
+################
 
 
 """
@@ -279,14 +275,14 @@ img[:,:,2] = img_scale.sqrt(last_color, scale_min=0, scale_max=10000)
 RA = 244.7958
 Dec = 57.9842
 
-galexfile = "galex/MAST_2015-04-29T2046/GALEX/6371021344036880384/AIS_3_sg33-nd-int.fits"
+GalexFile = "galex/MAST_2015-04-29T2046/GALEX/6371021344036880384/AIS_3_sg33-nd-int.fits"
 outgalex = "galex_stamp_l.fits"
 
-sdssfile = "sdss/frame-r-004682-4-0092.fits"
+SDSSFile = "sdss/frame-r-004682-4-0092.fits"
 outsdss = "sdss_stamp_l.fits"
 
-cutout.cutout(galexfile, RA, Dec, 0.05, 0.05, units='wcs', outfile=outgalex, coordsys='celestial')
-cutout.cutout(sdssfile, RA, Dec, 0.04, 0.04, units='wcs', outfile=outsdss, coordsys='celestial')
+cutout.cutout(GalexFile, RA, Dec, 0.05, 0.05, units='wcs', outfile=outgalex, coordsys='celestial')
+cutout.cutout(SDSSFile, RA, Dec, 0.04, 0.04, units='wcs', outfile=outsdss, coordsys='celestial')
 
 
 images_to_align = sorted(glob.glob(outgalex))

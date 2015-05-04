@@ -1,0 +1,3 @@
+Name			RA 			Dec 		GalexFilePath
+NGC4185 		183.3417 	28.5103 	galex/NGC4185/AIS_112_sg68-nd-int.fits.gz
+NGC6125 		244.7958 	57.9842 	galex/test.fits
