@@ -1,8 +1,14 @@
 #! /usr/local/bin python
 # -*- coding: iso-8859-1 -*-
 
-# Thic code requires Montage installed on your system:
+# This code requires Montage installed on your system:
 # http://montage.ipac.caltech.edu
+
+# It requires also casjobs: 
+# install it from http://galex.stsci.edu/casjobs/casjobscl.aspx
+casjobs = "java -jar ~/sandbox/CasJobsCL/casjobs.jar" 
+
+
 
 # Importing packages
 #import matplotlib
@@ -29,23 +35,87 @@ sdssfile = "sdss/frame-r-004682-4-0092.fits"
 
 # Temporary files directory
 tmp = "tmp/"
-os.mkdir(tmp)
+if not os.path.exists(tmp):
+	os.mkdir(tmp)
 
 # Name for the llow resolution sdss file
 sdss_lowres_file = tmp+'sdss_lowres.fits'
 
 
+######################
+# target coordinates #
+######################
+
+# NGC6125 E
+RA = 244.7958
+Dec = 57.9842
+
+# NGC4185 S
+#RA = 183.3417
+#Dec = 28.5103
+
+
+
+###################################################
+# Downloads directly from GALEX using coordinates:#
+###################################################
+
+galex_table_file = tmp+"galextable.csv"
+
+casjobs_cmd = casjobs+" execute "
+casjobs_cmd = casjobs_cmd + "\"SELECT TOP 100 p.objid, dbo.fHasSpectrum(p.objid) as specObjID, n.distance as distance_arcmin, dbo.fIAUFromEq(p.ra,p.dec) as IAUName,p.ra,p.dec,p.fuv_mag, p.nuv_mag,p.fuv_flux, p.nuv_flux,p.e_bv,p.isThereSpectrum,p.fuv_fwhm_world,p.nuv_fwhm_world,p.vsn,p.prod,p.tilenum,p.try,p.img,p.band,p.id,p.subvisit,p.leg,p.ow,p.type,p.htmID FROM PhotoObjAll as p LEFT OUTER JOIN SpecObjAll as s on p.objid = s.objid, dbo.fGetNearbyObjEq("
+casjobs_cmd = casjobs_cmd + str(RA)+" , "+str(Dec)
+casjobs_cmd = casjobs_cmd +" , 0.5) as n WHERE p.band=1 AND p.objID = n.objID ORDER BY n.distance ASC,p.nuv_flux ASC ,p.band ASC ,p.e_bv ASC\""
+casjobs_cmd = casjobs_cmd + ">"+galex_table_file
+os.system(casjobs_cmd)
+
+galex_data = ascii.read(galex_table_file, format='csv', header_start=1)
+
+survey = "AIS"
+galex_filter = "nd" # nd for NUV, fd for FUV
+vsn = galex_data["[vsn]:Integer"][0]
+vsn2 = ("%2i" % int(vsn)).replace(' ','0') + "-vsn"
+tile = str(galex_data["[tilenum]:Integer"][0])
+tile2 = tile +"-"+survey+"_"+tile[-3:]
+tryy = galex_data["[try]:Integer"][0]
+tryy2 = ("%2i" % int(tryy)).replace(' ','0') + "-try"
+subvisit = str(galex_data["[subvisit]:Integer"][0])
+
+imagename = survey+"_"+tile[-3:]+"_0001_sg"+subvisit+"-"+galex_filter+"-int.fits.gz"
+
+galeximageurl = "http://galex.stsci.edu/data/GR6/pipe/"+vsn2+"/"+tile2+"/d/00-visits/0001-img/"+tryy2+"/"+imagename
+
+urllib.urlretrieve(galeximageurl, tmp+"GalexNUV.fits.gz")
+urllib.urlcleanup()
+
+#urllib.urlretrieve("http://galex.stsci.edu/data/GR6/pipe/02-vsn/50112-AIS_112/d/00-visits/0001-img/07-try/AIS_112_0001_sg68-nd-int.fits.gz", tmp+"GalexNUV.fits.gz")
+
+
+sys.exit()
+
+
+"""
+<ROOT>/<proc ver>/<tile>/<obs mode>/<product>/<image>/<try>/. 
+
+Path: <root>/01-vsn/10330-AISCHV2_381_40554/d/00-visits/0002-img/03-try/
+
+http://galex.stsci.edu/data/GR6/pipe/02-vsn/50112-AIS_112/d/00-visits/0001-img/07-try/AIS_112_0001_sg68-nd-int.fits.gz 
+
+Filename: AISCHV2_381_40554_0002_sv12-xd-mcat.fits
+
+"""
+"""
+tile = 50112
+vsn = 02
+Tile Name: AIS_112 
+visit = 1
+NUV = nd
+GR ?
+"""
+
 ###################################################
 # Downloads directly from SDSS using coordinates: #
 ###################################################
-
-# NGC6125 E
-#RA = 244.7958
-#Dec = 57.9842
-
-# NGC4185 S
-RA = 183.3417
-Dec = 28.5103
 
 sdss_table_file = tmp+"sdsstable.csv"
 urllib.urlretrieve("http://skyserver.sdss.org/dr10/en/tools/search/x_radial.aspx?ra="+str(RA)+"&dec="+str(Dec)+"&radius=0.2&format=csv&limit=20", sdss_table_file)
@@ -63,13 +133,6 @@ field2 = ("%4i" % int(field)).replace(' ', '0')
 #urllib.urlretrieve("http://dr10.sdss3.org/sas/dr10/boss/photoObj/frames/"+rerun+"/"+run+"/"+camcol+"/frame-r-"+004682+"-"+camcol+"-"+0092+".fits.bz2", "test.fits.bz2")
 urllib.urlretrieve("http://dr10.sdss3.org/sas/dr10/boss/photoObj/frames/"+rerun+"/"+run+"/"+camcol+"/frame-r-"+run2+"-"+camcol+"-"+field2+".fits.bz2", tmp+"sdssR.fits.bz2")
 urllib.urlcleanup()
-
-
-
-
-
-
-
 
 
 ################################
