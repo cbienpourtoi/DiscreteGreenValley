@@ -1,3 +1,8 @@
 Name			RA 			Dec 		GalexFilePath
+NGC3226			155.86248	19.89849	galex/NGC3226/AIS_333_sg38-nd-int.fits.gz
+NGC3810			175.24473	11.47113	galex/NGC3810/AIS_232_sg68-nd-int.fits.gz
 NGC4185 		183.3417 	28.5103 	galex/NGC4185/AIS_112_sg68-nd-int.fits.gz
-NGC6125 		244.7958 	57.9842 	galex/test.fits
+NGC6125 		244.7958 	57.9842 	galex/NGC6125/MISGCSN1_10245_0004-nd-int.fits.gz
+M87				187.70593	12.39112	galex/M87/Virgo_Epoque_MOS07-nd-int.fits.gz
+M82				148.96969	69.67938	galex/M82/GI1_071001_M81-nd-int.fits.gz
+

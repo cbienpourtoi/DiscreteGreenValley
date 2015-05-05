@@ -72,6 +72,8 @@ galaxies = Table.read("galaxy_list.txt", format="ascii")
 
 for galaxy in galaxies:
 
+	print galaxy
+
 	name = galaxy["Name"]
 	RA = galaxy["RA"]
 	Dec = galaxy["Dec"]
@@ -227,23 +229,31 @@ for galaxy in galaxies:
 	######    RGB Image     ########
 	################################
 
-	sdss_lr_image = (fits.open(sdss_lowres_file))[0].data
-	galex_proj_image = (fits.open(galex_projected))[0].data
-	last_color = sdss_lr_image * 0.
+	# Make a cutout (thumbnails) of the images
+	tRfile = out+"thumbR.fits"
+	tNUVfile = out+"thumbNUV.fits"
 
-	sdss_lr_image = sdss_lr_image / np.nansum(sdss_lr_image)
-	galex_proj_image = galex_proj_image / np.nansum(galex_proj_image)
 
-	rgbArray = np.zeros((sdss_lr_image.shape[0],sdss_lr_image.shape[1],3), 'uint8')
-	rgbArray[..., 0] = sdss_lr_image * 25
-	rgbArray[..., 1] = galex_proj_image * 250
-	rgbArray[..., 2] = last_color
+	subprocess.call(["mSubimage", sdss_lowres_file, tRfile, str(RA), str(Dec), "0.1"])
+	subprocess.call(["mSubimage", galex_projected, tNUVfile, str(RA), str(Dec), "0.1"])
+
+
+	thumbR = (fits.open(tRfile))[0].data
+	thumbNUV = (fits.open(tNUVfile))[0].data
+	
+	#sdss_lr_image = sdss_lr_image / np.nansum(sdss_lr_image)
+	#galex_proj_image = galex_proj_image / np.nansum(galex_proj_image)
+
+	rgbArray = np.zeros((thumbR.shape[0],thumbR.shape[1],3), 'uint8')
+	rgbArray[..., 0] = thumbR / np.nanmax(thumbR)*255.
+	#rgbArray[..., 1] = thumbR * 0. # Green is already 0
+	rgbArray[..., 2] = thumbNUV / np.nanmax(thumbR)*255.*15.
 
 	img = Image.fromarray(rgbArray)
 
-	img.save(name+'.png')
+	img.save(out+name+'.png')
 	
-	sys.exit()
+	#sys.exit()
 
 
 
