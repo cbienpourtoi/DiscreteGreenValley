@@ -5,4 +5,5 @@ NGC4185 		183.3417 	28.5103 	galex/NGC4185/AIS_112_sg68-nd-int.fits.gz
 NGC6125 		244.7958 	57.9842 	galex/NGC6125/MISGCSN1_10245_0004-nd-int.fits.gz
 M87				187.70593	12.39112	galex/M87/Virgo_Epoque_MOS07-nd-int.fits.gz
 M82				148.96969	69.67938	galex/M82/GI1_071001_M81-nd-int.fits.gz
+NGC1174			46.378364	42.835904	galex/NGC1174/AIS_59_sg09-nd-int.fits.gz
 

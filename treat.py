@@ -129,12 +129,9 @@ for galaxy in galaxies:
 
 	# TODO:
 	# Or better, make a mosaic !
-	# http://data.sdss3.org/mosaic-server/mosaic?onlyprimary=False&pixelscale=0.396&ra=155.86248&filters=r&dec=19.89849&size=0.3
-	# crap, automatic mosaic does work
-	
-	
-	urllib.urlretrieve("http://data.sdss3.org/mosaic-server/mosaic?onlyprimary=False&pixelscale=0.396&ra=155.86248&filters=r&dec=19.89849&size=0.3", "test.tar")
-	urllib.urlcleanup()
+	# crap, automatic mosaic does work:
+	# urllib.urlretrieve("http://data.sdss3.org/mosaic-server/mosaic?onlyprimary=False&pixelscale=0.396&ra=155.86248&filters=r&dec=19.89849&size=0.3", "test.tar")
+	# gets a 403
 
 	sdss_table_file = out+"sdsstable.csv"
 	urllib.urlretrieve("http://skyserver.sdss.org/dr10/en/tools/search/x_radial.aspx?ra="+str(RA)+"&dec="+str(Dec)+"&radius=0.2&format=csv&limit=20", sdss_table_file)
