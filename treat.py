@@ -2,12 +2,22 @@
 # -*- coding: iso-8859-1 -*-
 
 """ 
-- Gets R images from sdss 
-- Imports the image you chose from Galex 
-(branch for galex auto-import currently abandonned)
-- Convolves sdss images to Galex images
-- Projects/Register sdss on Galex field
-- and then plays with the data obtained"""
+Inputs:
+- The list of objects name, coordinates, and galex NUV image path: galaxy_list.txt
+- A galex NUV image
+
+Process:
+- Gets R images from sdss corresponding to the object
+- (branch for galex auto-import currently abandonned)
+- Convolves sdss images to Galex PSF
+- Projects/Register Galex image on SDSS field
+- and then plays with the data obtained
+
+Outputs:
+
+"""
+
+
 
 
 # This code requires Montage installed on your system:
@@ -37,19 +47,12 @@ from PIL import Image #If you want to make RGB image
 import urllib
 from astropy.table import Table
 from astropy.io import ascii
-import bz2
+#import bz2
+import subprocess
 
 ############
 ### Init ###
 ############
-
-# Temporary files directory
-tmp = "tmp/"
-if not os.path.exists(tmp):
-	os.mkdir(tmp)
-
-# Name for the llow resolution sdss file
-sdss_lowres_file = tmp+'sdss_lowres.fits'
 
 
 # Initial files (sdss for R-band, galex for NUV band)
@@ -73,6 +76,14 @@ for galaxy in galaxies:
 	RA = galaxy["RA"]
 	Dec = galaxy["Dec"]
 	GalexFile = galaxy["GalexFilePath"] 
+
+	# Output files directory
+	out = "out/"
+	if not os.path.exists(out):
+		os.mkdir(out)
+	out = out+name+"/"
+	if not os.path.exists(out):
+		os.mkdir(out)
 	
 	"""
 	# NGC6125 E
@@ -92,7 +103,7 @@ for galaxy in galaxies:
 
 	casjobs = "java -jar ~/sandbox/CasJobsCL/casjobs.jar" 
 
-	galex_table_file = tmp+"galextable.csv"
+	galex_table_file = out+"galextable.csv"
 
 	casjobs_cmd = casjobs+" execute "
 	casjobs_cmd = casjobs_cmd + "\"SELECT TOP 100 p.objid, dbo.fHasSpectrum(p.objid) as specObjID, n.distance as distance_arcmin, dbo.fIAUFromEq(p.ra,p.dec) as IAUName,p.ra,p.dec,p.fuv_mag, p.nuv_mag,p.fuv_flux, p.nuv_flux,p.e_bv,p.isThereSpectrum,p.fuv_fwhm_world,p.nuv_fwhm_world,p.vsn,p.prod,p.tilenum,p.try,p.img,p.band,p.id,p.subvisit,p.leg,p.ow,p.type,p.htmID FROM PhotoObjAll as p LEFT OUTER JOIN SpecObjAll as s on p.objid = s.objid, dbo.fGetNearbyObjEq("
@@ -117,10 +128,10 @@ for galaxy in galaxies:
 
 	galeximageurl = "http://galex.stsci.edu/data/GR6/pipe/"+vsn2+"/"+tile2+"/d/00-visits/0001-img/"+tryy2+"/"+imagename
 
-	urllib.urlretrieve(galeximageurl, tmp+"GalexNUV.fits.gz")
+	urllib.urlretrieve(galeximageurl, out+"GalexNUV.fits.gz")
 	urllib.urlcleanup()
 
-	#urllib.urlretrieve("http://galex.stsci.edu/data/GR6/pipe/02-vsn/50112-AIS_112/d/00-visits/0001-img/07-try/AIS_112_0001_sg68-nd-int.fits.gz", tmp+"GalexNUV.fits.gz")
+	#urllib.urlretrieve("http://galex.stsci.edu/data/GR6/pipe/02-vsn/50112-AIS_112/d/00-visits/0001-img/07-try/AIS_112_0001_sg68-nd-int.fits.gz", out+"GalexNUV.fits.gz")
 
 
 	sys.exit()
@@ -132,7 +143,7 @@ for galaxy in galaxies:
 	# Downloads directly from SDSS using coordinates: #
 	###################################################
 
-	sdss_table_file = tmp+"sdsstable.csv"
+	sdss_table_file = out+"sdsstable.csv"
 	urllib.urlretrieve("http://skyserver.sdss.org/dr10/en/tools/search/x_radial.aspx?ra="+str(RA)+"&dec="+str(Dec)+"&radius=0.2&format=csv&limit=20", sdss_table_file)
 	urllib.urlcleanup()
 	sdss_data = ascii.read(sdss_table_file, format='csv', header_start=1)
@@ -145,10 +156,14 @@ for galaxy in galaxies:
 	run2 = ("%6i" % int(run)).replace(' ', '0')
 	field2 = ("%4i" % int(field)).replace(' ', '0')
 	
-	SDSSFile = tmp+"sdssR.fits.bz2"
-	urllib.urlretrieve("http://dr10.sdss3.org/sas/dr10/boss/photoObj/frames/"+rerun+"/"+run+"/"+camcol+"/frame-r-"+run2+"-"+camcol+"-"+field2+".fits.bz2", SDSSFile)
+	SDSSFile = out+"sdssR.fits"
+	urllib.urlretrieve("http://dr10.sdss3.org/sas/dr10/boss/photoObj/frames/"+rerun+"/"+run+"/"+camcol+"/frame-r-"+run2+"-"+camcol+"-"+field2+".fits.bz2", SDSSFile+".bz2")
 	urllib.urlcleanup()
-
+	try:
+		subprocess.call(["bunzip2",SDSSFile+".bz2"])
+	except OSError:
+		print "Error in unzipping the sdss file: "+SDSSFile+".bz2"
+		raise
 
 
 	################################
@@ -175,8 +190,11 @@ for galaxy in galaxies:
 
 
 	# Opens SDSS and convolves it to psf
-	sdss_hdulist = fits.open(bz2.BZ2File(SDSSFile))
+	sdss_hdulist = fits.open(SDSSFile)
 	sdss_lowres = convolve_fft(sdss_hdulist[0].data, psf)
+
+	# Name for the low resolution sdss file
+	sdss_lowres_file = out+'sdss_lowres.fits'
 
 	# Saves the low resolution sdss
 	hdu = fits.PrimaryHDU(sdss_lowres, header = sdss_hdulist[0].header)
@@ -192,16 +210,16 @@ for galaxy in galaxies:
 
 	# File in which we will create the header template requested by Montage 
 	#(http://montage.ipac.caltech.edu/docs/mProject.html)
-	sdssheader_tmp = tmp+"sdsstmp.hdr"
+	sdssheader_tmp = out+"sdsstmp.hdr"
 
 	# Projected Galex image on the header system of the sdss image
-	galex_projected = tmp+"galex_projected.fits"
+	galex_projected = out+"galex_projected.fits"
 
 	# Creates the header template
-	os.system("mGetHdr "+SDSSFile+" "+ sdssheader_tmp)
+	subprocess.call(["mGetHdr", SDSSFile, sdssheader_tmp])
 
 	# Does the projection
-	os.system("mProject "+GalexFile+" "+ galex_projected+" "+sdssheader_tmp)
+	subprocess.call(["mProject", GalexFile, galex_projected, sdssheader_tmp])
 
 
 
@@ -223,7 +241,9 @@ for galaxy in galaxies:
 
 	img = Image.fromarray(rgbArray)
 
-	img.save('myimg.jpeg')
+	img.save(name+'.png')
+	
+	sys.exit()
 
 
 
