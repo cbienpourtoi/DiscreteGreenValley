@@ -128,7 +128,7 @@ for galaxy in galaxies:
 	###################################################
 
 	# TODO:
-	# Or better, make a mosaic !
+	# Make a mosaic !
 	# crap, automatic mosaic does work:
 	# urllib.urlretrieve("http://data.sdss3.org/mosaic-server/mosaic?onlyprimary=False&pixelscale=0.396&ra=155.86248&filters=r&dec=19.89849&size=0.3", "test.tar")
 	# gets a 403
