@@ -183,6 +183,15 @@ for galaxy in galaxies:
 	sdss_hdulist = fits.open(SDSSFile)
 	sdss_lowres = convolve_fft(sdss_hdulist[0].data, psf)
 
+	# Sanity check: the convolved and original images must have the same total:
+	sumlow = np.sum(sdss_lowres)
+	sumhi = np.sum(sdss_hdulist[0].data)
+	if np.abs(sumlow - sumhi) >= np.mean([sumlow , sumhi]) * 0.05:
+		print "there is more than 5% difference between the convolved and the initial image, mayeb something is wrong?"
+		print "convolved image sum = "+str(sumlow)
+		print "initial image sum   = "+str(sumhi)
+		sys.exit()
+
 	# Name for the low resolution sdss file
 	sdss_lowres_file = out+'sdss_lowres.fits'
 
@@ -236,9 +245,18 @@ for galaxy in galaxies:
 	#rgbArray[..., 1] = thumbR * 0. # Green is already 0
 	rgbArray[..., 2] = thumbNUV / np.nanmax(thumbR)*255.*15.
 
+	#if name == "NGC6125": rgbArray[..., 2] = 5.*rgbArray[..., 2]
+
 	img = Image.fromarray(rgbArray)
 
 	img.save(out+name+'.png')
 	
-	#sys.exit()
+
+	################################
+	######    Magnitudes     #######
+	################################
+
+	
+
+
 
